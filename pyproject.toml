@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mcp-human-in-the-loop-workflow"
 version = "0.1.0"
-description = "A stateful MCP workflow adapter with human confirmation and stage gates."
+description = "A stateful MCP workflow for authorized Web/API security analysis."
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
 license = { text = "MIT" }

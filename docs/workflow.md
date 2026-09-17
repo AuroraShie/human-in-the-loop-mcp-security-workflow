@@ -1,4 +1,4 @@
-# Workflow behavior
+# Runtime workflow behavior
 
 ## State progression
 
@@ -40,4 +40,4 @@ stateDiagram-v2
 
 ## Operational boundary
 
-The code persists workflow state but does not enforce every operational rule described in `workflow/policies/`. Operators remain responsible for authorization, target-side action, evidence handling, and applicable policy requirements.
+The code persists workflow state but does not enforce every operational rule described in the workflow specification. Operators remain responsible for authorization, target-side action, evidence handling, and applicable policy requirements.

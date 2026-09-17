@@ -1,13 +1,13 @@
 {
   "session_id": "a1b2c3d4e5f6",
-  "status": "active",
+  "status": "closed",
   "created_at": "2026-01-01T00:00:00+00:00",
-  "updated_at": "2026-01-01T00:05:00+00:00",
+  "updated_at": "2026-01-01T00:06:00+00:00",
   "task_description": "Synthetic workflow example; no network operation is performed.",
   "target_scope": "https://example.com/ synthetic demonstration only",
   "target_kind": "owned",
   "authorization_basis": "Synthetic example used to demonstrate session state only.",
-  "phase": "minimal_validation",
+  "phase": "reporting",
   "assets": [
     {
       "asset_id": "asset-example1",
@@ -28,13 +28,16 @@
     {"number": 5, "endpoint_id": "endpoint-ex005", "asset": "example.com", "page": "Example page 5", "role": "test user", "object_type": "example object", "action": "read", "identifier": "example-5", "identity_context": "synthetic account", "method": "GET", "path": "/api/example/5", "response_signature": "Synthetic response summary.", "expected_authorization": "Synthetic account may read its own object.", "candidate_hypothesis": "Access-control consistency.", "data_classification": "own_or_test", "recorded_at": "2026-01-01T00:02:00+00:00"}
   ],
   "scanner_leads": [
-    {"lead_id": "lead-example1", "tool_name": "Synthetic scanner", "target_asset": "example.com", "claimed_issue": "Synthetic candidate only", "evidence_summary": "No request or vulnerability is represented.", "status": "candidate_manual_replay_required", "recorded_at": "2026-01-01T00:03:00+00:00"}
+    {"lead_id": "lead-example1", "tool_name": "Synthetic tool", "target_asset": "example.com", "claimed_issue": "Synthetic candidate only", "evidence_summary": "Demonstration lead only; no request or vulnerability is represented.", "status": "candidate_manual_replay_required", "recorded_at": "2026-01-01T00:03:00+00:00"}
   ],
   "hypotheses": [
-    {"hypothesis_id": "hypothesis-ex1", "direction": "access control", "rationale": "Synthetic endpoint mapping example.", "endpoint_numbers": [1, 2], "expected_safe_behavior": "Reject access outside the synthetic object boundary.", "status": "selected", "recorded_at": "2026-01-01T00:04:00+00:00"}
+    {"hypothesis_id": "hypothesis-ex1", "direction": "access control", "rationale": "Synthetic endpoint mapping example.", "endpoint_numbers": [1, 2], "expected_safe_behavior": "Reject access outside the synthetic object boundary.", "status": "confirmed", "recorded_at": "2026-01-01T00:04:00+00:00"}
   ],
-  "validations": [],
+  "validations": [
+    {"validation_id": "validation-ex1", "hypothesis_id": "hypothesis-ex1", "sequence": 1, "baseline_summary": "Synthetic baseline completed in a fictional local state example.", "single_change": "Synthetic identity-boundary comparison recorded for demonstration only.", "observed_result": "Synthetic result retained as an example of structured workflow state.", "actual_impact": "Fictional impact statement used only to demonstrate the Confirmed gate.", "conclusion": "confirmed", "manual_replay_confirmed": true, "sensitive_non_owned_data_seen": false, "service_instability_seen": false, "recorded_at": "2026-01-01T00:05:00+00:00"}
+  ],
   "automation_limits": {"max_concurrency": 2, "approx_requests_per_second": 1, "human_approval": true},
   "steps": [],
-  "stop_reason": null
+  "stop_reason": null,
+  "outcome": "Synthetic workflow closed after a fictional manual replay and redacted recap."
 }

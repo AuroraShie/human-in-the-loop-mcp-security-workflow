@@ -1,0 +1,30 @@
+{
+  "policy_version": "example-1",
+  "scope": "Template only; replace with an engagement-specific policy outside this repository.",
+  "default": "human-review-required",
+  "rules": [
+    {
+      "category": "state recording",
+      "allowed_in_adapter": true,
+      "requires_human_approval": false,
+      "note": "The adapter may persist redacted workflow summaries locally."
+    },
+    {
+      "category": "target-side operation",
+      "allowed_in_adapter": false,
+      "requires_human_approval": true,
+      "note": "Browsing, requests, scans, and validation are performed manually outside the adapter."
+    },
+    {
+      "category": "security-tool lead",
+      "allowed_in_adapter": "record-as-candidate-only",
+      "requires_human_approval": true,
+      "note": "A tool lead requires manual replay before it can support a conclusion."
+    }
+  ],
+  "stop_conditions": [
+    "uncertain or out-of-scope boundary",
+    "sensitive non-owned data",
+    "service instability"
+  ]
+}

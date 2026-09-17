@@ -1,112 +1,110 @@
-# MCP Human-in-the-loop Workflow
+# Human-in-the-loop MCP Security Workflow
 
-A stateful MCP workflow for controlled Agent execution with stage gating and human confirmation.
+> A stateful MCP workflow for authorized Web/API security analysis, combining LLM-assisted reasoning, human-controlled validation, and persistent workflow state.
+
+中文定位：面向授权 Web/API 安全分析的 Human-in-the-loop MCP Agent 工作流。
 
 ## Overview
 
-This repository demonstrates a local MCP adaptation for structured, authorized security-analysis workflows. A host LLM assists with analysis and decision support; the MCP layer persists session state and enforces a small set of workflow gates. Any target-side browsing, request, scan, or validation is performed manually by the operator.
+This is a security-workflow project, not an autonomous testing system. It shows how a local MCP layer preserves the state of an authorized security-analysis engagement, controls selected stage transitions, separates tool leads from human conclusions, and records stop conditions. A host LLM helps organize information and suggest a next step; target-side work remains under human control.
 
-It is not an autonomous pentest agent, scanner, or exploitation framework.
+## Why This Workflow
 
-## My contribution
+Authorized Web/API analysis is a long-running, high-risk workflow. Context such as authorization, scope, mapped interfaces, validation history, and a reason to stop must survive across steps. The workflow therefore gives each role a clear boundary:
 
-- Local MCP adaptation
-- Persistent JSON session state
-- Stage gating
-- Human-in-the-loop workflow
-- Candidate / Confirmed result separation
-- Authorization and stop rules
-- Offline workflow tests
-- Workflow policies and reporting templates
+- The **LLM** reads the recorded state, helps analyze it, and suggests the next low-impact step.
+- The **MCP workflow layer** persists session state, tracks the current stage, and enforces selected validation gates.
+- The **human operator** performs real target interaction, high-risk actions, manual replay, and final impact confirmation.
+- **Security tools** supply evidence or candidate leads. Their output is not a final conclusion.
+
+## End-to-End Workflow
+
+```mermaid
+flowchart LR
+    A[Authorization] --> B[Scope and asset confirmation]
+    B --> C[Endpoint mapping]
+    C --> D[Hypothesis selection]
+    D --> E[Controlled validation]
+    E --> F[Candidate or Confirmed result recording]
+    F --> G[Report and closure]
+    B -. boundary issue .-> X[Stop]
+    E -. sensitive data or instability .-> X
+```
+
+The detailed operating path is in [docs/end-to-end-workflow.md](docs/end-to-end-workflow.md). The synthetic example uses `example.com` only and contains no target traffic or exploit payload.
 
 ## Architecture
 
 ```mermaid
-flowchart LR
-    H[Human operator] --> L[Host LLM]
-    L --> M[MCP workflow layer]
+flowchart TB
+    H[Human operator] <--> L[Host LLM]
+    L <--> M[MCP workflow layer]
     M <--> S[Persistent JSON session state]
-    H --> T[Manual external tools and target-side operations]
+    H --> T[Security tools and target-side actions]
     T --> H
 ```
 
-The adapter records redacted workflow state. It does not run shell commands, send network requests, start scanners, or store raw credentials.
+Security tools are operated by the human and their redacted findings are brought back into the workflow. The adapter itself does not send network requests, start scanners, run shell commands, or store raw credentials.
 
-## Workflow
+## Runtime Implementation
 
-```mermaid
-flowchart LR
-    A[Authorization] --> B[Asset confirmation]
-    B --> C[Endpoint mapping]
-    C --> D[Hypothesis selection]
-    D --> E[Controlled validation]
-    E --> F[Result recording]
-    F --> G[Report or close]
-    E --> X[Stop]
-```
+The adapter in [src/pentestgpt_mcp.py](src/pentestgpt_mcp.py) implements part of the workflow specification:
 
-- A session requires an explicit authorization confirmation, exact scope, and authorization basis.
-- An asset must be confirmed and in scope before endpoints are recorded.
-- At least five key endpoints are required before hypothesis selection.
-- A session accepts one hypothesis and at most two validation records for it.
-- A scanner lead is always a Candidate and requires manual replay before it can support a conclusion.
-- A Confirmed conclusion requires a caller-supplied manual-replay flag and a concrete actual-impact statement.
-- Non-owned sensitive data, service instability, or a boundary stop moves the session to a stopped state.
+- JSON session persistence;
+- explicit authorization confirmation and an exact scope/basis check at session creation;
+- a confirmed in-scope asset before endpoint mapping;
+- a five-endpoint gate before hypothesis selection;
+- one hypothesis per session and at most two validation records for it;
+- scanner leads recorded as Candidate only;
+- manual replay plus a concrete impact statement required for Confirmed;
+- stop transitions for sensitive non-owned data, service instability, and an explicit boundary stop.
 
-## Project structure
+The code does not claim to runtime-enforce every operational rule. Read [docs/architecture.md](docs/architecture.md) for the state boundary and [docs/workflow.md](docs/workflow.md) for the concrete gates.
 
-```text
-src/                 MCP adapter
-tests/               Offline workflow tests
-workflow/            Non-executable policy and review template
-docs/                Architecture and workflow details
-examples/            Fully synthetic session example
-SECURITY_REVIEW.md   Inclusion and exclusion review
-```
+## Workflow Specification
 
-## Running locally
+The documents in [workflow/](workflow/) guide the parts that require operator judgment:
 
-The adapter retains integration imports from the separately installed PentestGPT project, but its state-management workflow and offline tests run without vendoring PentestGPT. This repository deliberately does not include PentestGPT or its source tree.
+- [handbook.md](workflow/handbook.md) explains the workflow and role handoffs.
+- [sop.md](workflow/sop.md) gives the human operating sequence.
+- [governance.md](workflow/governance.md) records approval, evidence, and stop expectations.
+- [policies/tool-policy.example.json](policies/tool-policy.example.json) is a non-target-specific policy example.
+- [templates/](templates/) contains generic engagement, interface-inventory, and validation-record forms.
 
-1. Install a supported Python runtime (`>=3.12,<4.0`).
-2. Install this project and its MCP dependency:
+These documents complement the runtime gates; they are not a complete policy engine.
 
-   ```powershell
-   pip install -e .
-   ```
+## Human-in-the-loop
 
-3. Run the offline tests:
-
-   ```powershell
-   python -m unittest tests.test_mcp_workflow -v
-   ```
-
-4. Start the local MCP server over stdio:
-
-   ```powershell
-   python src/pentestgpt_mcp.py
-   ```
-
-For native PentestGPT model discovery, prompt integration, or the CLI-command helper, install PentestGPT separately according to its upstream instructions so `pentestgpt_legacy` is importable.
+The workflow deliberately reserves high-risk behavior for the operator. A tool result can be useful evidence, but it becomes only a Candidate in the persisted state. A result can be marked Confirmed only after a human records a manual replay and a specific impact statement. The `manual_replay_confirmed` value is still caller-provided workflow evidence, not independent proof generated by the code.
 
 ## Tests
 
-`tests/test_mcp_workflow.py` covers authorization rejection, the five-endpoint and manual-replay gates, Candidate handling for scanner leads, Confirmed-report readiness, and forced stopping for non-owned sensitive data. The tests use a temporary session directory and do not access a network target.
+Run the focused offline tests from the repository root:
+
+```powershell
+python -m unittest tests.test_mcp_workflow -v
+```
+
+The three tests use a temporary session directory and no network target. They cover authorization rejection; the five-endpoint, Candidate, and manual-replay gates; and the stop transition for synthetic non-owned sensitive data.
+
+Latest local run: `python -m unittest tests.test_mcp_workflow -v` — **3 tests passed**.
+
+## Example Workflow
+
+[examples/example-session.json](examples/example-session.json) is a fully synthetic, closed session for `example.com`: authorized session, confirmed asset, five mapped interfaces, one hypothesis, a Candidate lead, manual replay, a Confirmed validation, and closure. It is a state-shape example only; it neither contacts a target nor contains a real vulnerability payload.
 
 ## Limitations
 
-- Target-side network operations are manual.
-- There is no autonomous scanning or automatic exploitation.
-- Human confirmation is partly represented by caller-supplied state.
-- Session persistence uses JSON rather than a database.
-- The policy documents explain intended operating practice; they are not a complete runtime policy engine.
-- The native CLI command helper reflects a Windows virtual-environment layout and requires a separately installed PentestGPT environment.
+- No autonomous scanning or automatic exploitation is implemented.
+- Target-side operations are manual.
+- Tool policy is not fully runtime-enforced; action-level approval is mainly specification-level.
+- JSON persistence has limited concurrency guarantees.
+- Human confirmation partly relies on caller-provided state.
+- PentestGPT-specific model discovery, prompt integration, and CLI-command validation require a separate installation.
 
 ## Attribution
 
-- PentestGPT is a third-party open-source project. See the [upstream project](https://github.com/GreyDGL/PentestGPT).
-- MCP Python SDK / FastMCP are third-party frameworks.
-- This repository focuses on my local adaptation and workflow design; it does not include or claim authorship of PentestGPT.
+PentestGPT is a third-party open-source project. FastMCP and the MCP Python SDK are third-party frameworks. This repository contains my local workflow design, MCP adaptation, documentation, and focused workflow tests; it does not include or claim authorship of PentestGPT or its upstream source code. See the [PentestGPT upstream project](https://github.com/GreyDGL/PentestGPT).
 
 ## License
 
